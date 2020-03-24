@@ -1,5 +1,5 @@
 PREFIX=/usr
-CFLAGS=-O2
+CFLAGS=-Werror=return-type -Werror=format -fno-strict-aliasing -O2
 
 ifeq ($(shell pkg-config --errors-to-stdout --print-errors xcb-randr),)
 	XCB_TARGET=libxcb-randr.so.0
@@ -14,13 +14,15 @@ skeleton-xrandr.h: make_skeleton.py
 	./make_skeleton.py X11/extensions/Xrandr.h XRR libXrandr.c RRCrtc,RROutput > $@ || { rm -f $@; exit 1; }
 
 skeleton-xcb.h: make_skeleton.py
-	./make_skeleton.py xcb/randr.h xcb_randr_ libxcb-randr.c xcb_randr_output_t,xcb_randr_crtc_t > $@ || { rm -f $@; exit 1; }
+	./make_skeleton.py xcb/randr.h xcb_randr_ libxcb-randr.cpp xcb_randr_output_t,xcb_randr_crtc_t > $@ || { rm -f $@; exit 1; }
 
 libXrandr.so: libXrandr.c config.h skeleton-xrandr.h
 	$(CC) $(CFLAGS) -fPIC -shared -o $@ $< -ldl
 
-libxcb-randr.so: libxcb-randr.c config.h skeleton-xcb.h
-	$(CC) $(CFLAGS) -fPIC -shared -o $@ $< -ldl
+libxcb-randr.so: libxcb-randr.cpp config.h skeleton-xcb.h
+	@# NOTE: not $(CXX), to avoid silent linking to libstdc++. We want to keep this C++ code as if it were "enhanced C",
+	@# without heavy features and libraries.
+	$(CC) -fno-exceptions $(CFLAGS) -fPIC -shared -o $@ $< -ldl
 
 libXinerama.so.1 libXrandr.so.2: libXrandr.so
 	[ -e $@ ] || ln -s $< $@

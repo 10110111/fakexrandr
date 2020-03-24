@@ -76,7 +76,12 @@ for function in functions:
           ))
 
 defns = []
+print("#ifdef __cplusplus\n"
+      "#    define CAST_DLSYM_TO_TYPE_OF(x) (decltype(x))\n"
+      "#else\n"
+      "#    define CAST_DLSYM_TO_TYPE_OF(x)\n"
+      "#endif\n")
 for function in functions:
-    defns.append("_{fn} = dlsym(xrandr_lib, \"{fn}\")".format(fn=function[1]))
+    defns.append("_{fn} = CAST_DLSYM_TO_TYPE_OF(_{fn})dlsym(xrandr_lib, \"{fn}\")".format(fn=function[1]))
 print("#define FUNCTION_POINTER_INITIALIZATIONS {defns}".format(
     defns="; ".join(defns)))

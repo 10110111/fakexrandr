@@ -54,7 +54,7 @@ static int open_configuration() {
 		if(!home_dir) {
 			return 1;
 		}
-		config_dir = alloca(512);
+		config_dir = (char*)alloca(512);
 		if(snprintf(config_dir, 512, "%s/.config", home_dir) >= 512) {
 			return 1;
 		}
@@ -76,7 +76,7 @@ static int open_configuration() {
 	struct stat config_stat;
 	fstat(config_file_fd, &config_stat);
 	config_file_size = config_stat.st_size;
-	config_file = mmap(NULL, config_file_size, PROT_READ, MAP_SHARED, config_file_fd, 0);
+	config_file = (char*)mmap(NULL, config_file_size, PROT_READ, MAP_SHARED, config_file_fd, 0);
 	if(config_file == MAP_FAILED) {
 		perror("fakexrandr/mmap()");
 		config_file = NULL;
