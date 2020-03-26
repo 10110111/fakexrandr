@@ -123,7 +123,7 @@ static char *_config_foreach_split(char *config, unsigned int *n, unsigned int x
 		**fake_crtcs = NULL;
 
 		// Define a new fake mode
-		**fake_modes = Xcalloc(1, sizeof(struct FakeInfo) + sizeof(XRRModeInfo) + sizeof("XXXXxXXXX"));
+		**fake_modes = Xcalloc(1, sizeof(struct FakeInfo) + sizeof(XRRModeInfo) + sizeof("AAAAAxBBBBB"));
 		(**fake_modes)->xid = (output_info->crtc & ~XID_SPLIT_MASK) | ((*n) << XID_SPLIT_SHIFT);
 		(**fake_modes)->parent_xid = 0;
 		XRRModeInfo *fake_mode_info = (**fake_modes)->info = (void*)**fake_modes + sizeof(struct FakeInfo);
