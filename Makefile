@@ -50,4 +50,4 @@ uninstall: config.h
 	ldconfig
 
 clean:
-	rm -f libXrandr.so libxcb-randr.so libXrandr.so.2 libXinerama.so.1 $(XCB_TARGET) config.h skeleton-xcb.h skeleton-xrandr.h
+	rm -f libXrandr.so libxcb-randr.so libXrandr.so.2 libXinerama.so.1 $(XCB_TARGET) config.h skeleton-xcb.h skeleton-xrandr.h xcbtest
