@@ -51,7 +51,7 @@ for function in functions:
             actions.append(
                 " {param} = {param} & ~XID_SPLIT_MASK;".format(param=param))
 
-    if re.search("(?<!_){}".format(name), ccode):
+    if re.search("(?<!_){}\\b".format(name), ccode):
         print(("static {ret} (*_{fn})({par_def});\n".format(
             ret=rettype, par_def=", ".join(parameter_array), fn=name)))
         continue
