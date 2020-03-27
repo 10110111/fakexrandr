@@ -59,7 +59,9 @@ XCB_LINE=
 if pkg-config --exists xcb-randr; then
 	echo "xcb-randr is available; also building xcb interface"
 
-	REAL_XCB_RANDR_LIBRARY=$(find /usr/lib -name libxcb-randr.so | head -n 1)
+    paths="$(pkg-config --libs xcb-randr | sed -e 's@.*-L\( *[^ ]\+\).*@\1@' -e 's@\(^\| \)-l[^ ]\+\>@@g')"
+    [ -z "$paths" ] && paths=/usr/lib
+	REAL_XCB_RANDR_LIBRARY=$(find $paths -name libxcb-randr.so | head -n 1)
 	if [ -z ${REAL_XCB_RANDR_LIBRARY} ]; then
 		echo "          Aborting: Did not find libxcb-randr.so in /usr/lib"
 		exit 1
