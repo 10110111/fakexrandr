@@ -10,11 +10,6 @@ split.
 This tool used to only work with XRandR, but I found it useful to add Xinerama
 emulation. It can be readily removed if it isn't needed though.
 
-Note that this tool right now only works for legacy Xlib applications.
-Applications using xcb will not work. See
-[issue #22](https://github.com/phillipberndt/fakexrandr/pull/22) for progress
-on xcb support.
-
 Also note: With xrandr 1.5, this library shouldn't be needed anymore for most
 users. xrandr has an abstraction for "monitors" now which should work out of
 the box, at least with applications written using one of the big GUI
@@ -129,8 +124,6 @@ TODO
   memory. Since many programs will read it often, it would be useful to cache
   it ourselfes, in XResources (see an old revision for some Python code in the
   management tool regarding that), via a daemon, or shared memory.
-
-* Support libxcb
 
 See also
 --------
