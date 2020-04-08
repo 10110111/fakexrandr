@@ -74,7 +74,7 @@ static char *_config_foreach_split(char *config, unsigned int *n, unsigned int x
 
 	if(config[0] == 'N') {
 		// Define a new output info
-		**fake_outputs = Xmalloc(sizeof(struct FakeInfo) + sizeof(XRROutputInfo) + output_info->nameLen + sizeof("~NNN ") + sizeof(RRCrtc) + sizeof(RROutput) * output_info->nclone + (1 + output_info->nmode) * sizeof(RRMode));
+		**fake_outputs = Xmalloc(sizeof(struct FakeInfo) + sizeof(XRROutputInfo) + output_info->nameLen + sizeof("~NNN ") + sizeof(RRCrtc) + sizeof(RROutput) * output_info->nclone + 1 * sizeof(RRMode));
 		(**fake_outputs)->xid = (output & ~XID_SPLIT_MASK) | ((++(*n)) << XID_SPLIT_SHIFT);
 		(**fake_outputs)->parent_xid = output;
 		XRROutputInfo *fake_info = (**fake_outputs)->info = (void*)**fake_outputs + sizeof(struct FakeInfo);
@@ -93,11 +93,10 @@ static char *_config_foreach_split(char *config, unsigned int *n, unsigned int x
 		for(i=0; i<fake_info->nclone; i++) {
 			fake_info->clones[i] = (output_info->clones[i] & ~XID_SPLIT_MASK) | ((*n) << XID_SPLIT_SHIFT);
 		}
-		fake_info->nmode = 1 + output_info->nmode;
+		fake_info->nmode = 1;
 		fake_info->npreferred = 0;
 		fake_info->modes = (void*)fake_info->clones + fake_info->nclone * sizeof(RROutput);
 		fake_info->crtc = *fake_info->crtcs = *fake_info->modes = (output_info->crtc & ~XID_SPLIT_MASK) | ((*n) << XID_SPLIT_SHIFT);
-		memcpy(fake_info->modes + 1, output_info->modes, sizeof(RRMode) * output_info->nmode);
 
 		*fake_outputs = &(**fake_outputs)->next;
 		**fake_outputs = NULL;
@@ -314,6 +313,9 @@ static struct FakeScreenResources *augment_resources(Display *dpy, XRRScreenReso
 	retval->res.outputs = (void*)retval->res.crtcs + sizeof(RRCrtc) * ncrtc;
 	RROutput *next_output = retval->res.outputs;
 	for(i=0; i<res->noutput; i++) {
+        *next_output = res->outputs[i];
+        next_output++;
+        retval->res.noutput++;
 		if(xid_in_list(outputs, res->outputs[i])) {
 			struct FakeInfo *toutput;
 			for(toutput=outputs; toutput; toutput = toutput->next) {
@@ -323,11 +325,6 @@ static struct FakeScreenResources *augment_resources(Display *dpy, XRRScreenReso
 					retval->res.noutput++;
 				}
 			}
-		}
-		else {
-			*next_output = res->outputs[i];
-			next_output++;
-			retval->res.noutput++;
 		}
 	}
 
@@ -387,7 +384,7 @@ XRRScreenResources *XRRGetScreenResourcesCurrent(Display *dpy, Window window) {
 
 XRROutputInfo *XRRGetOutputInfo(Display *dpy, XRRScreenResources *resources, RROutput output) {
 	struct FakeInfo *fake = xid_in_list(((struct FakeScreenResources *)resources)->fake_outputs, output);
-	if(fake) {
+	if(fake && (output & XID_SPLIT_MASK)) {
 		// We have to *clone* this here to mitigate issues due to the Gnome folks misusing the API, see
 		// gnome bugzilla #755934
 		XRROutputInfo *retval = Xmalloc(sizeof(XRROutputInfo));
@@ -396,6 +393,8 @@ XRROutputInfo *XRRGetOutputInfo(Display *dpy, XRRScreenResources *resources, RRO
 	}
 
 	XRROutputInfo *retval = _XRRGetOutputInfo(dpy, resources, output & ~XID_SPLIT_MASK);
+    if(fake)
+        retval->connection=RR_Disconnected;
 	return retval;
 }
 
@@ -406,7 +405,7 @@ void XRRFreeOutputInfo(XRROutputInfo *outputInfo) {
 
 XRRCrtcInfo *XRRGetCrtcInfo(Display *dpy, XRRScreenResources *resources, RRCrtc crtc) {
 	struct FakeInfo *fake = xid_in_list(((struct FakeScreenResources *)resources)->fake_crtcs, crtc);
-	if(fake) {
+	if(fake && (crtc & XID_SPLIT_MASK)) {
 		// We have to *clone* this here to mitigate issues due to the Gnome folks misusing the API, see
 		// gnome bugzilla #755934
 		XRRCrtcInfo *retval = Xmalloc(sizeof(XRRCrtcInfo));

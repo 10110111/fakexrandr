@@ -312,17 +312,11 @@ struct FakeScreenResources
         const auto num_fake_outputs=list_length(fake_outputs);
         const auto num_fake_modes=list_length(fake_modes);
 
-        const auto*const origOutputs=_xcb_randr_get_screen_resources_outputs(origRes);
-        unsigned num_omitted_outputs=0;
-        for(unsigned i=0; i<origRes->num_outputs; ++i)
-            if(xid_in_list(fake_outputs, origOutputs[i]))
-                ++num_omitted_outputs;
-
         const auto begin=origRes;
         const auto end=_xcb_randr_get_screen_resources_names(begin)+origRes->names_len +
                         fakeNamesTotalLen+1 +
                         num_fake_crtcs*sizeof(xcb_randr_crtc_t) +
-                        (num_fake_outputs-num_omitted_outputs)*sizeof(xcb_randr_output_t) +
+                        num_fake_outputs*sizeof(xcb_randr_output_t) +
                         num_fake_modes*sizeof(xcb_randr_mode_info_t);
         const auto size=reinterpret_cast<const char*>(end)-reinterpret_cast<const char*>(begin);
         const auto p=static_cast<xcb_randr_get_screen_resources_reply_t*>(malloc(size));
@@ -341,17 +335,9 @@ struct FakeScreenResources
         }
 
         const auto outputsToFill=_xcb_randr_get_screen_resources_outputs(p);
-        for(unsigned srcI=0, dstI=0; srcI<origRes->num_outputs; ++srcI)
-        {
-            const auto output=origOutputs[srcI];
-            if(xid_in_list(fake_outputs, output))
-            {
-                --p->num_outputs;
-                continue;
-            }
-            outputsToFill[dstI++]=output;
-        }
-        i=p->num_outputs;
+        const auto*const origOutputs=_xcb_randr_get_screen_resources_outputs(origRes);
+        std::copy_n(origOutputs, origRes->num_outputs, outputsToFill);
+        i=origRes->num_outputs;
         for(auto* output=fake_outputs; output; output=output->nextInList)
         {
             outputsToFill[i++]=output->xid;
@@ -402,7 +388,7 @@ char* _config_foreach_split(char* config, unsigned int* n, unsigned int x, unsig
     {
         // Define a new output info
         **fake_outputs = newObj<FakeOutputInfo>(augmentXID(output, ++(*n)), output, *output_info,
-                                                1 + output_info->num_modes, output_info->num_clones,
+                                                1, output_info->num_clones,
                                                 output_info->mm_width * width / crtc_info->width,
                                                 output_info->mm_height * height / crtc_info->height, *n);
         auto& fake_output_info = **fake_outputs;
@@ -410,7 +396,6 @@ char* _config_foreach_split(char* config, unsigned int* n, unsigned int x, unsig
         for(int i=0; i<fake_output_info->orig_output_info.num_clones; i++)
             fake_output_info->clones[i] = augmentXID(output_clones[i], *n);
         fake_output_info->orig_output_info.crtc = *fake_output_info->modes = augmentXID(output_info->crtc, *n);
-        std::copy_n(_xcb_randr_get_output_info_modes(output_info), output_info->num_modes, fake_output_info->modes + 1);
 
         *fake_outputs = &(**fake_outputs)->nextInList;
         **fake_outputs = NULL;
@@ -654,15 +639,13 @@ static AssocList<decltype(xcb_randr_get_output_info_cookie_t::sequence), xcb_ran
 xcb_randr_get_output_info_cookie_t xcb_randr_get_output_info(xcb_connection_t* c, xcb_randr_output_t output, xcb_timestamp_t config_timestamp)
 {
     const auto cookie = _xcb_randr_get_output_info(c,output & ~XID_SPLIT_MASK, config_timestamp);
-    if(output & XID_SPLIT_MASK)
-        output_info_cookies.insert(cookie.sequence,output);
+    output_info_cookies.insert(cookie.sequence,output);
     return cookie;
 }
 xcb_randr_get_output_info_cookie_t xcb_randr_get_output_info_unchecked(xcb_connection_t* c, xcb_randr_output_t output, xcb_timestamp_t config_timestamp)
 {
     const auto cookie = _xcb_randr_get_output_info_unchecked(c,output & ~XID_SPLIT_MASK, config_timestamp);
-    if(output & XID_SPLIT_MASK)
-        output_info_cookies.insert(cookie.sequence,output);
+    output_info_cookies.insert(cookie.sequence,output);
     return cookie;
 }
 xcb_randr_get_output_info_reply_t* xcb_randr_get_output_info_reply(xcb_connection_t* c, xcb_randr_get_output_info_cookie_t cookie, xcb_generic_error_t** e)
@@ -674,6 +657,16 @@ xcb_randr_get_output_info_reply_t* xcb_randr_get_output_info_reply(xcb_connectio
     const auto outputId=fakeOutputItem->data.value;
     output_info_cookies.erase(fakeOutputItem);
     if(!fakeScreenResources) return nullptr; // FIXME: maybe call get_screen_resources{,_reply} instead of failing?
+    if(!(outputId & XID_SPLIT_MASK))
+    {
+        const auto outputInfo=_xcb_randr_get_output_info_reply(c,cookie,e);
+        if(xid_in_list(fakeScreenResources->fake_outputs, outputId))
+        {
+            // This output is fake. Make it look disconnected.
+            outputInfo->connection=XCB_RANDR_CONNECTION_DISCONNECTED;
+        }
+        return outputInfo;
+    }
     for(auto* output=fakeScreenResources->fake_outputs; output; output=output->nextInList)
     {
         if(output->xid!=outputId) continue;
