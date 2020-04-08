@@ -35,10 +35,12 @@ xcbtest: xcbtest.c
 	$(CC) $(CFLAG) -o $@ $< -lX11 -lXrandr -lxcb -lxcb-randr
 
 
-install: libXrandr.so
+install: libXrandr.so libxcb-randr.so
 	TARGET_DIR=`sed -nre 's/#define FAKEXRANDR_INSTALL_DIR "([^"]+)"/\1/p' config.h`; \
 	[ -d $$TARGET_DIR ] || exit 1; \
 	install libXrandr.so $$TARGET_DIR; \
+	install libxcb-randr.so $$TARGET_DIR; \
+	ln -s libxcb-randr.so $$TARGET_DIR/libxcb-randr.so.0 || true; \
 	ln -s libXrandr.so $$TARGET_DIR/libXrandr.so.2 || true; \
 	ln -s libXrandr.so $$TARGET_DIR/libXinerama.so.1 || true; \
 	ldconfig
