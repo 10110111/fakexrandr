@@ -606,15 +606,13 @@ static AssocList<decltype(xcb_randr_get_crtc_info_cookie_t::sequence), xcb_randr
 xcb_randr_get_crtc_info_cookie_t xcb_randr_get_crtc_info(xcb_connection_t* c, xcb_randr_crtc_t crtc, xcb_timestamp_t config_timestamp)
 {
     const auto cookie = _xcb_randr_get_crtc_info(c,crtc & ~XID_SPLIT_MASK, config_timestamp);
-    if(crtc & XID_SPLIT_MASK)
-        crtc_info_cookies.insert(cookie.sequence,crtc);
+    crtc_info_cookies.insert(cookie.sequence,crtc);
     return cookie;
 }
 xcb_randr_get_crtc_info_cookie_t xcb_randr_get_crtc_info_unchecked(xcb_connection_t* c, xcb_randr_crtc_t crtc, xcb_timestamp_t config_timestamp)
 {
     const auto cookie = _xcb_randr_get_crtc_info_unchecked(c,crtc & ~XID_SPLIT_MASK, config_timestamp);
-    if(crtc & XID_SPLIT_MASK)
-        crtc_info_cookies.insert(cookie.sequence,crtc);
+    crtc_info_cookies.insert(cookie.sequence,crtc);
     return cookie;
 }
 xcb_randr_get_crtc_info_reply_t* xcb_randr_get_crtc_info_reply(xcb_connection_t* c, xcb_randr_get_crtc_info_cookie_t cookie, xcb_generic_error_t** e)
@@ -626,6 +624,20 @@ xcb_randr_get_crtc_info_reply_t* xcb_randr_get_crtc_info_reply(xcb_connection_t*
     const auto crtcId=fakeCrtcItem->data.value;
     crtc_info_cookies.erase(fakeCrtcItem);
     if(!fakeScreenResources) return nullptr; // FIXME: maybe call get_screen_resources{,_reply} instead of failing?
+    if(!(crtcId & XID_SPLIT_MASK))
+    {
+        const auto info=_xcb_randr_get_crtc_info_reply(c,cookie,e);
+        for(const auto* output=fakeScreenResources->fake_outputs; output; output=output->nextInList)
+        {
+            if((output->orig_output_info.crtc & ~XID_SPLIT_MASK)!=crtcId)
+                continue;
+            // This CRTC corresponds to a fake output. Hide its current mode.
+            info->mode=0;
+            info->x=info->y=info->width=info->height=0;
+            break;
+        }
+        return info;
+    }
     for(auto* crtc=fakeScreenResources->fake_crtcs; crtc; crtc=crtc->nextInList)
     {
         if(crtc->xid!=crtcId) continue;

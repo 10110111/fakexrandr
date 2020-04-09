@@ -414,6 +414,11 @@ XRRCrtcInfo *XRRGetCrtcInfo(Display *dpy, XRRScreenResources *resources, RRCrtc 
 	}
 
 	XRRCrtcInfo *retval = _XRRGetCrtcInfo(dpy, resources, crtc & ~XID_SPLIT_MASK);
+    if(fake)
+    {
+        retval->mode=0;
+        retval->x=retval->y=retval->width=retval->height=0;
+    }
 	return retval;
 }
 
