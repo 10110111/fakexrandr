@@ -345,7 +345,7 @@ static struct FakeScreenResources *augment_resources(Display *dpy, XRRScreenReso
 
 static void _init() __attribute__((constructor));
 static void _init() {
-	void *xrandr_lib = dlopen(REAL_XRANDR_LIB, RTLD_LAZY | RTLD_GLOBAL);
+	void *xrandr_lib = dlopen(REAL_XRANDR_LIB, RTLD_LAZY | RTLD_LOCAL);
 
 	/*
 		The following macro is defined by the skeleton header. It initializes
