@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <type_traits>
 
+#include "xcb-randr-orig-lib.h"
 #include "fakexrandr.h"
 
 extern "C"
@@ -34,7 +35,7 @@ extern "C"
     explicitly defined in this C file, replacing all references to
     crtcs and outputs which are fake with the real ones.
 */
-#include "skeleton-xcb.h"
+#include "skeleton-xcb-randr.h"
 }
 
 namespace
@@ -559,7 +560,7 @@ void updateFakeResources(xcb_connection_t* c, xcb_randr_get_screen_resources_rep
 void _init() __attribute__((constructor));
 void _init()
 {
-    void* xrandr_lib = dlopen(REAL_XCB_RANDR_LIB, RTLD_LAZY | RTLD_LOCAL);
+    void* xrandr_lib = dlopen(REAL_LIB, RTLD_LAZY | RTLD_LOCAL);
 
     /*
         The following macro is defined by the skeleton header. It initializes

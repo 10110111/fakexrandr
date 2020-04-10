@@ -23,6 +23,7 @@
 #include <assert.h>
 #include <string.h>
 
+#include "Xrandr-orig-lib.h"
 #include "fakexrandr.h"
 
 /*
@@ -32,7 +33,7 @@
 	explicitly defined in this C file, replacing all references to
 	crtcs and outputs which are fake with the real ones.
 */
-#include "skeleton-xrandr.h"
+#include "skeleton-Xrandr.h"
 
 /*
 	We use an augmented version of the screen resources to store all our
@@ -345,7 +346,7 @@ static struct FakeScreenResources *augment_resources(Display *dpy, XRRScreenReso
 
 static void _init() __attribute__((constructor));
 static void _init() {
-	void *xrandr_lib = dlopen(REAL_XRANDR_LIB, RTLD_LAZY | RTLD_LOCAL);
+	void *xrandr_lib = dlopen(REAL_LIB, RTLD_LAZY | RTLD_LOCAL);
 
 	/*
 		The following macro is defined by the skeleton header. It initializes
