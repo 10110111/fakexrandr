@@ -76,6 +76,9 @@ static int open_configuration() {
 	struct stat config_stat;
 	fstat(config_file_fd, &config_stat);
 	config_file_size = config_stat.st_size;
+	if(config_file_size==0) {
+		return 1;
+	}
 	config_file = (char*)mmap(NULL, config_file_size, PROT_READ, MAP_SHARED, config_file_fd, 0);
 	if(config_file == MAP_FAILED) {
 		perror("fakexrandr/mmap()");
