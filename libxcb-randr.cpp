@@ -588,6 +588,7 @@ xcb_randr_get_screen_resources_current_reply_t* xcb_randr_get_screen_resources_c
         deleteObj(fakeScreenResources);
     auto*const screen_resources = _xcb_randr_get_screen_resources_current_reply(c, cookie, e);
     updateFakeResources(c, reinterpret_cast<xcb_randr_get_screen_resources_reply_t*>(screen_resources), true);
+    if(!fakeScreenResources) return screen_resources;
     return reinterpret_cast<xcb_randr_get_screen_resources_current_reply_t*>(fakeScreenResources->makeReturnValue());
 }
 xcb_randr_get_screen_resources_reply_t* xcb_randr_get_screen_resources_reply(xcb_connection_t* c,
@@ -598,6 +599,7 @@ xcb_randr_get_screen_resources_reply_t* xcb_randr_get_screen_resources_reply(xcb
         deleteObj(fakeScreenResources);
     auto*const screen_resources = _xcb_randr_get_screen_resources_reply(c, cookie, e);
     updateFakeResources(c, screen_resources, false);
+    if(!fakeScreenResources) return screen_resources;
     return fakeScreenResources->makeReturnValue();
 }
 
@@ -618,12 +620,11 @@ xcb_randr_get_crtc_info_cookie_t xcb_randr_get_crtc_info_unchecked(xcb_connectio
 xcb_randr_get_crtc_info_reply_t* xcb_randr_get_crtc_info_reply(xcb_connection_t* c, xcb_randr_get_crtc_info_cookie_t cookie, xcb_generic_error_t** e)
 {
     const auto fakeCrtcItem=crtc_info_cookies.find(cookie.sequence);
-    if(!fakeCrtcItem)
+    if(!fakeCrtcItem || !fakeScreenResources)
         return _xcb_randr_get_crtc_info_reply(c,cookie,e);
 
     const auto crtcId=fakeCrtcItem->data.value;
     crtc_info_cookies.erase(fakeCrtcItem);
-    if(!fakeScreenResources) return nullptr; // FIXME: maybe call get_screen_resources{,_reply} instead of failing?
     if(!(crtcId & XID_SPLIT_MASK))
     {
         const auto info=_xcb_randr_get_crtc_info_reply(c,cookie,e);
@@ -663,12 +664,11 @@ xcb_randr_get_output_info_cookie_t xcb_randr_get_output_info_unchecked(xcb_conne
 xcb_randr_get_output_info_reply_t* xcb_randr_get_output_info_reply(xcb_connection_t* c, xcb_randr_get_output_info_cookie_t cookie, xcb_generic_error_t** e)
 {
     const auto fakeOutputItem=output_info_cookies.find(cookie.sequence);
-    if(!fakeOutputItem)
+    if(!fakeOutputItem || !fakeScreenResources)
         return _xcb_randr_get_output_info_reply(c,cookie,e);
 
     const auto outputId=fakeOutputItem->data.value;
     output_info_cookies.erase(fakeOutputItem);
-    if(!fakeScreenResources) return nullptr; // FIXME: maybe call get_screen_resources{,_reply} instead of failing?
     if(!(outputId & XID_SPLIT_MASK))
     {
         const auto outputInfo=_xcb_randr_get_output_info_reply(c,cookie,e);
