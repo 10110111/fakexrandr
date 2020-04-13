@@ -40,9 +40,9 @@ install: libXrandr.so libxcb-randr.so
 	[ -d $$TARGET_DIR ] || exit 1; \
 	install libXrandr.so $$TARGET_DIR; \
 	install libxcb-randr.so $$TARGET_DIR; \
-	ln -s libxcb-randr.so $$TARGET_DIR/libxcb-randr.so.0 || true; \
-	ln -s libXrandr.so $$TARGET_DIR/libXrandr.so.2 || true; \
-	ln -s libXrandr.so $$TARGET_DIR/libXinerama.so.1 || true; \
+	ln -sf libxcb-randr.so $$TARGET_DIR/libxcb-randr.so.0; \
+	ln -sf libXrandr.so $$TARGET_DIR/libXrandr.so.2; \
+	ln -sf libXrandr.so $$TARGET_DIR/libXinerama.so.1; \
 	ldconfig
 	install fakexrandr-manage.py $(PREFIX)/bin/fakexrandr-manage
 
