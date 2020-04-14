@@ -540,7 +540,11 @@ void updateFakeResources(xcb_connection_t* c, xcb_randr_get_screen_resources_rep
     FakeCrtcInfo** fake_crtcs_end = &fake_crtcs;
     FakeModeInfo** fake_modes_end = &fake_modes;
 
-    if(open_configuration()) return;
+    if(open_configuration())
+    {
+        fakeScreenResources=nullptr;
+        return;
+    }
 
     xcb_randr_get_screen_resources_current_reply_t*const resc=(xcb_randr_get_screen_resources_current_reply_t*)res;
     xcb_randr_output_t*const res_outputs = current ? (xcb_randr_output_t*)_xcb_randr_get_screen_resources_current_outputs(resc)
